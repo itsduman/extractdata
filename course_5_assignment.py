@@ -1,0 +1,401 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "64b15d5e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import yfinance as yf\n",
+    "import pandas as pd\n",
+    "import requests\n",
+    "from bs4 import BeautifulSoup as bs\n",
+    "import plotly.graph_objects as go\n",
+    "from plotly.subplots import make_subplots"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1d7a8051",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "!pip install yfinance==0.1.67\n",
+    "!mamba install bs4==4.10.0\n",
+    "!pip install nbformat==4.2.0"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "941ddd5c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import warnings\n",
+    "# Ignore all warnings\n",
+    "warnings.filterwarnings(\"ignore\", category=FutureWarning)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "ea4a9227",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def make_graph(stock_data, revenue_data, stock):\n",
+    "    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=(\"Historical Share Price\", \"Historical Revenue\"), vertical_spacing = .3)\n",
+    "    stock_data_specific = stock_data[stock_data.Date <= '2021--06-14']\n",
+    "    revenue_data_specific = revenue_data[revenue_data.Date <= '2021-04-30']\n",
+    "    fig.add_trace(go.Scatter(x=pd.to_datetime(stock_data_specific.Date, infer_datetime_format=True), y=stock_data_specific.Close.astype(\"float\"), name=\"Share Price\"), row=1, col=1)\n",
+    "    fig.add_trace(go.Scatter(x=pd.to_datetime(revenue_data_specific.Date, infer_datetime_format=True), y=revenue_data_specific.Revenue.astype(\"float\"), name=\"Revenue\"), row=2, col=1)\n",
+    "    fig.update_xaxes(title_text=\"Date\", row=1, col=1)\n",
+    "    fig.update_xaxes(title_text=\"Date\", row=2, col=1)\n",
+    "    fig.update_yaxes(title_text=\"Price ($US)\", row=1, col=1)\n",
+    "    fig.update_yaxes(title_text=\"Revenue ($US Millions)\", row=2, col=1)\n",
+    "    fig.update_layout(showlegend=False,\n",
+    "    height=900,\n",
+    "    title=stock,\n",
+    "    xaxis_rangeslider_visible=True)\n",
+    "    fig.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "7e54effc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla = yf.Ticker('TSLA')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1aa64167",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla_data = tesla.history(period = 'max')\n",
+    "#tesla_data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4a163587",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla_data.reset_index(inplace = True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9183987b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla_data.head(5)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 57,
+   "id": "5b7667ad",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "url = 'https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0220EN-SkillsNetwork/labs/project/revenue.htm'\n",
+    "html_data = requests.get(url).text"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 58,
+   "id": "c13324db",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "soup = bs(html_data, 'html5lib')\n",
+    "#soup"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 59,
+   "id": "781c3a8a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "table_body = soup.find_all('tbody')[1]\n",
+    "table = table_body\n",
+    "#table"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 60,
+   "id": "af611ef5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla_revenue = pd.DataFrame(columns=[\"Date\", \"Revenue\"])\n",
+    "\n",
+    "for row in table.find_all('tr'):\n",
+    "    col = row.find_all('td')\n",
+    "    date = col[0].text\n",
+    "    revenue = col[1].text\n",
+    "    \n",
+    "    tesla_revenue = tesla_revenue._append({'Date':date,'Revenue':revenue}, ignore_index = True)\n",
+    "    \n",
+    "#tesla_revenue"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 61,
+   "id": "9ebe84a6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#ba ye ravashe dige age bekhahim be dast biarim\n",
+    "read_html_pandas_data = pd.read_html(url)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 62,
+   "id": "5d87a86d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla_dataframe = read_html_pandas_data[1]\n",
+    "#tesla_dataframe"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a5f7cb4a",
+   "metadata": {},
+   "source": [
+    "Execute the following line to remove the comma and dollar sign from the `Revenue` column. \n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 63,
+   "id": "ab04eb02",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla_revenue[\"Revenue\"] = tesla_revenue['Revenue'].replace(',|\\$',\"\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "129c3c4d",
+   "metadata": {},
+   "source": [
+    "Execute the following lines to remove an null or empty strings in the Revenue column.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 41,
+   "id": "535c54c6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla_revenue.dropna(inplace=True)\n",
+    "tesla_revenue = tesla_revenue[tesla_revenue['Revenue'] != \"\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bebb6552",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tesla_revenue.tail()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 94,
+   "id": "95d442c9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gamestop = yf.Ticker('GME')\n",
+    "gme_data = gamestop.history(period = 'max')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 95,
+   "id": "3006e626",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gme_data.reset_index(inplace=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6b24b5a8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gme_data.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 77,
+   "id": "a5816ac0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "url = 'https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0220EN-SkillsNetwork/labs/project/stock.html'\n",
+    "gme_data = requests.get(url).text"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 68,
+   "id": "62beefe3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "soup = bs(gma_html_data, 'html5lib')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 70,
+   "id": "7cbc8242",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "table_body1 = soup.find_all('tbody')\n",
+    "table1 = table_body1[1]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9d0a7f21",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gme_revenue = pd.DataFrame(columns = ['Date', 'Revenue'])\n",
+    "\n",
+    "for row in table1.find_all('tr'):\n",
+    "    col = row.find_all('td')\n",
+    "    date = col[0].text\n",
+    "    revenue = col[1].text\n",
+    "    \n",
+    "    gme_revenue = gme_revenue._append({'Date':date,'Revenue':revenue},ignore_index=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "40747fb5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gme_revenue.tail()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a88f28fe",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gme_revenue[\"Revenue\"] = gme_revenue['Revenue'].replace(',|\\$',\"\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 80,
+   "id": "224a926f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gme_revenue.dropna(inplace=True)\n",
+    "\n",
+    "gme_revenue = gme_revenue[gme_revenue['Revenue'] != \"\"]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8411a530",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gme_revenue"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c2472f24",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "make_graph(tesla_data, tesla_revenue, 'Tesla')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fa735b64",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "gme_data.plot(x = 'Date', y = 'Volume')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "dbd98103",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
